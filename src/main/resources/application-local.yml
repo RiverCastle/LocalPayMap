@@ -12,8 +12,4 @@ spring:
 
 open-data:
   sync-cron: "0 0 0 31 2 *" # 로컬에서는 배치 자동 실행 안 되도록 매년 2/31(존재하지 않는 날짜)로 비활성화
-  sync-on-startup: false # 로컬은 수원 가맹점 데이터로 확인, 기동 시 외부 공공데이터 API 호출 안 함
-
-# 로컬 기동 시 자동으로 적재할 수원 가맹점 raw JSON 파일 경로 (H2는 재기동마다 초기화되므로 매번 다시 넣음)
-import:
-  suwon-file-path: C:/Users/nn007/Desktop/임시파일/수원가맹점.txt
+  sync-on-startup: false # 로컬 기동 시 외부 공공데이터 API 호출 안 함 (필요하면 관리자 페이지에서 수동 동기화/파일 업로드)

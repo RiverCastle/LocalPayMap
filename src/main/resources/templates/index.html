@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>지역화폐 가맹점 지도</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body>
+    <header class="app-header">
+        <h1>지역화폐 가맹점 지도</h1>
+        <a class="admin-link" th:href="@{/admin/stores}">관리자</a>
+    </header>
+
+    <section class="filter-bar">
+        <select id="currencyTypeSelect">
+            <option value="">전체 지역화폐</option>
+        </select>
+        <input id="categoryInput" type="text" placeholder="업종 (예: 음식점)" />
+        <input id="keywordInput" type="text" placeholder="가맹점명 검색" />
+        <button id="searchButton" type="button">검색</button>
+        <button id="locateButton" type="button">내 위치로 이동</button>
+    </section>
+
+    <main>
+        <div id="map"></div>
+        <aside id="storeList" aria-label="가맹점 목록"></aside>
+    </main>
+
+    <div id="storeDetail" class="store-detail hidden">
+        <button id="closeDetailButton" type="button" class="close-btn">&times;</button>
+        <h2 id="detailName"></h2>
+        <p id="detailAddress"></p>
+        <p id="detailPhone"></p>
+        <p id="detailCategory"></p>
+        <p id="detailCurrency"></p>
+    </div>
+
+    <script th:src="|https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${naverClientId}|"></script>
+    <script th:src="@{/js/map.js}"></script>
+</body>
+</html>

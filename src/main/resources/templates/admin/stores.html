@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>가맹점 관리 - 지역화폐 가맹점 지도</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body>
+    <header class="app-header">
+        <h1>가맹점 관리</h1>
+        <div>
+            <a class="admin-link" th:href="@{/}">지도로 이동</a>
+            <form th:action="@{/admin/logout}" method="post" style="display:inline">
+                <button type="submit" class="admin-link" style="background:none;cursor:pointer">로그아웃</button>
+            </form>
+        </div>
+    </header>
+
+    <div class="admin-container">
+        <section>
+            <h2>공공데이터 동기화</h2>
+            <button id="syncButton" type="button">지금 동기화 실행</button>
+            <span id="syncStatus"></span>
+            <table id="syncLogTable">
+                <thead>
+                <tr><th>실행시각</th><th>상태</th><th>신규</th><th>수정</th><th>메시지</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>가맹점 파일 가져오기 (대량 등록)</h2>
+            <p style="font-size:13px;color:#666">지자체 지역화폐 API를 덤프한 raw JSON 파일을 업로드하면 위경도 그대로 일괄 등록됩니다.</p>
+            <form id="importForm" class="admin-form" enctype="multipart/form-data">
+                <input type="text" id="importRegionName" placeholder="지역명 (예: 경기도 수원시)" required />
+                <input type="text" id="importCurrencyName" placeholder="지역화폐명 (예: 수원페이)" required />
+                <input type="file" id="importFile" accept=".json,.txt" required style="grid-column:1 / -1" />
+                <button type="submit">업로드 및 가져오기</button>
+                <span id="importStatus" style="grid-column:1 / -1;font-size:13px;color:#666"></span>
+            </form>
+        </section>
+
+        <section>
+            <h2>가맹점 등록 / 수정</h2>
+            <form id="storeForm" class="admin-form">
+                <input type="hidden" id="storeId" />
+                <input type="text" id="formName" placeholder="가맹점명" required />
+                <select id="formCurrencyTypeId" required>
+                    <option value="">지역화폐 선택</option>
+                </select>
+                <input type="text" id="formRoadAddress" placeholder="도로명주소" required />
+                <input type="text" id="formJibunAddress" placeholder="지번주소 (선택)" />
+                <input type="text" id="formPhone" placeholder="전화번호" />
+                <input type="text" id="formCategory" placeholder="업종" />
+                <select id="formBizStatus">
+                    <option value="OPEN">영업중</option>
+                    <option value="CLOSED">폐업</option>
+                </select>
+                <button type="submit">저장</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>가맹점 목록</h2>
+            <table id="storeTable">
+                <thead>
+                <tr><th>이름</th><th>주소</th><th>지역화폐</th><th>구분</th><th>관리</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        window.CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
+        /*]]>*/
+    </script>
+    <script th:src="@{/js/admin.js}"></script>
+</body>
+</html>

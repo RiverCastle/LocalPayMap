@@ -187,7 +187,52 @@
         markers = [];
     }
 
+    var NAVER_POPUP_NAME = 'naverPlacePopup';
+
+    /**
+     * 네이버 지도 장소 ID(place/12345...)는 우리 DB에 없고 공식 API로도 얻을 수 없어서,
+     * 동일 상호 오검색을 막기 위해 "상호 + 주소"로 검색 URL을 만든다. (결과가 한 곳이면 네이버가 장소 상세를 바로 연다)
+     * 주소는 도로명주소를 우선 쓰고, 없으면 지번주소에서 "번지"와 층/호 정보를 떼어 쓴다.
+     */
+    function naverSearchQuery(store) {
+        var address = store.roadAddress;
+        if (!address && store.jibunAddress) {
+            address = store.jibunAddress
+                .replace(/번지/g, '')
+                .replace(/\s+(지하\s*)?\d+층.*$/, '')
+                .trim();
+        }
+        return (store.name + ' ' + (address || '')).trim();
+    }
+
+    function naverPlaceUrl(store) {
+        return 'https://map.naver.com/p/search/' + encodeURIComponent(naverSearchQuery(store));
+    }
+
+    /** 같은 이름의 창을 재사용하므로 마커를 연속 클릭해도 팝업이 계속 늘어나지 않는다. */
+    function openNaverPlacePopup(store) {
+        var width = 520;
+        var height = Math.min(window.screen.availHeight - 80, 860);
+        var left = Math.max(0, window.screenX + window.outerWidth - width - 20);
+        var top = Math.max(0, window.screenY + 40);
+        var popup = window.open(
+            naverPlaceUrl(store),
+            NAVER_POPUP_NAME,
+            'popup=yes,width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',resizable=yes,scrollbars=yes'
+        );
+        if (popup) {
+            popup.focus();
+        }
+        return popup;
+    }
+
     function showDetail(store) {
+        var link = el('detailNaverLink');
+        link.href = naverPlaceUrl(store);
+        link.onclick = function (event) {
+            // 팝업 차단 등으로 열리지 않으면 기본 동작(새 탭)으로 폴백한다.
+            if (openNaverPlacePopup(store)) event.preventDefault();
+        };
         el('detailName').textContent = store.name;
         el('detailAddress').textContent = store.roadAddress || store.jibunAddress || '';
         el('detailPhone').textContent = store.phone ? '전화: ' + store.phone : '';
@@ -244,6 +289,7 @@
             var marker = new naver.maps.Marker({ position: position, map: map });
             naver.maps.Event.addListener(marker, 'click', function () {
                 showDetail(store);
+                openNaverPlacePopup(store);
             });
             markers.push(marker);
 

@@ -375,3 +375,39 @@ main {
 .store-marker:hover .store-label {
     max-width: none;
 }
+
+/* 같은 좌표(건물)에 여러 가맹점이 있는 마커 */
+.store-marker.group-marker .store-label {
+    left: 34px;
+    top: 8px;
+    color: #e8590c;
+    border-color: #f3c9ae;
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #fff4ec;
+    border-bottom: 1px solid #f3c9ae;
+    font-size: 13px;
+}
+
+.group-header button {
+    padding: 3px 9px;
+    font-size: 12px;
+    background: #fff;
+    border: 1px solid #c8d3ea;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.group-filter {
+    display: block;
+    width: calc(100% - 16px);
+    margin: 8px;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}

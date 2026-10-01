@@ -292,6 +292,10 @@
             .replace(/"/g, '&quot;');
     }
 
+    var GROUP_PIN_WIDTH = 30;
+    var GROUP_PIN_HEIGHT = 40;
+
+    /** 단일 가맹점 마커: 파란 핀 + 상호 라벨 */
     function storeMarkerHtml(store, showLabel) {
         return (
             '<div class="store-marker' +
@@ -305,37 +309,147 @@
         );
     }
 
-    function renderStores(stores) {
-        clearMarkers();
+    /** 같은 좌표(같은 건물)에 여러 가맹점이 있을 때의 마커: 주황 핀 + 점포 수 */
+    function groupMarkerHtml(group, showLabel) {
+        return (
+            '<div class="store-marker group-marker' +
+            (showLabel ? ' labeled' : '') +
+            '" style="width:' + GROUP_PIN_WIDTH + 'px;height:' + GROUP_PIN_HEIGHT + 'px">' +
+            '<svg class="store-pin" width="' + GROUP_PIN_WIDTH + '" height="' + GROUP_PIN_HEIGHT + '" viewBox="0 0 30 40">' +
+            '<path d="M15 0C6.7 0 0 6.7 0 15c0 11 15 25 15 25s15-14 15-25C30 6.7 23.3 0 15 0z" fill="#e8590c"/>' +
+            '<circle cx="15" cy="15" r="10.5" fill="#fff"/>' +
+            '<text x="15" y="19" text-anchor="middle" font-size="' + (group.stores.length >= 100 ? 10 : 12) +
+            '" font-weight="700" fill="#e8590c">' + group.stores.length + '</text></svg>' +
+            '<span class="store-label">' + group.stores.length + '곳</span>' +
+            '</div>'
+        );
+    }
+
+    /** 위경도가 완전히 같은 가맹점을 하나로 묶는다. (한 건물에 입점한 점포들은 건물 대표 좌표를 공유한다) */
+    function groupByLocation(stores) {
+        var byKey = {};
+        var groups = [];
+        stores.forEach(function (store) {
+            var key = store.lat + ',' + store.lng;
+            var group = byKey[key];
+            if (!group) {
+                group = { key: key, lat: store.lat, lng: store.lng, stores: [] };
+                byKey[key] = group;
+                groups.push(group);
+            }
+            group.stores.push(store);
+        });
+        return groups;
+    }
+
+    var currentGroups = [];
+    var selectedGroupKey = null;
+
+    function appendStoreListItem(listEl, store, onClick) {
+        var item = document.createElement('div');
+        item.className = 'store-list-item';
+        item.textContent = store.name + ' (' + (store.roadAddress || store.jibunAddress || '') + ')';
+        item.addEventListener('click', onClick);
+        listEl.appendChild(item);
+    }
+
+    /** 오른쪽 패널: 선택된 건물이 있으면 그 건물의 점포만(이름 검색 가능), 없으면 화면 안의 전체 가맹점 */
+    function renderStoreList() {
         var listEl = el('storeList');
         listEl.innerHTML = '';
+        var selected = currentGroups.filter(function (g) {
+            return g.key === selectedGroupKey;
+        })[0];
+
+        if (!selected) {
+            selectedGroupKey = null;
+            currentGroups.forEach(function (group) {
+                group.stores.forEach(function (store) {
+                    appendStoreListItem(listEl, store, function () {
+                        map.panTo(new naver.maps.LatLng(group.lat, group.lng));
+                        showDetail(store);
+                    });
+                });
+            });
+            return;
+        }
+
+        var header = document.createElement('div');
+        header.className = 'group-header';
+        var title = document.createElement('strong');
+        title.textContent = '이 위치의 가맹점 ' + selected.stores.length + '곳';
+        var back = document.createElement('button');
+        back.type = 'button';
+        back.textContent = '전체 목록';
+        back.addEventListener('click', function () {
+            selectedGroupKey = null;
+            renderStoreList();
+        });
+        header.appendChild(title);
+        header.appendChild(back);
+        listEl.appendChild(header);
+
+        var filter = document.createElement('input');
+        filter.type = 'text';
+        filter.className = 'group-filter';
+        filter.placeholder = '이 건물 안에서 상호 검색';
+        listEl.appendChild(filter);
+
+        var itemsEl = document.createElement('div');
+        listEl.appendChild(itemsEl);
+
+        function renderItems() {
+            var query = filter.value.trim().toLowerCase();
+            itemsEl.innerHTML = '';
+            selected.stores.forEach(function (store) {
+                if (query && store.name.toLowerCase().indexOf(query) < 0) return;
+                appendStoreListItem(itemsEl, store, function () {
+                    showDetail(store);
+                    openNaverPlacePopup(store);
+                });
+            });
+        }
+        filter.addEventListener('input', renderItems);
+        renderItems();
+    }
+
+    function renderStores(stores) {
+        clearMarkers();
+        currentGroups = groupByLocation(stores);
         var showLabels = map.getZoom() >= LABEL_MIN_ZOOM;
 
-        stores.forEach(function (store) {
-            var position = new naver.maps.LatLng(store.lat, store.lng);
+        currentGroups.forEach(function (group) {
+            var position = new naver.maps.LatLng(group.lat, group.lng);
+            var multiple = group.stores.length > 1;
             var marker = new naver.maps.Marker({
                 position: position,
                 map: map,
+                // 건물 마커가 단일 마커 위에 오도록 한다.
+                zIndex: multiple ? 20 : 10,
                 icon: {
-                    content: storeMarkerHtml(store, showLabels),
-                    anchor: new naver.maps.Point(PIN_WIDTH / 2, PIN_HEIGHT)
+                    content: multiple
+                        ? groupMarkerHtml(group, showLabels)
+                        : storeMarkerHtml(group.stores[0], showLabels),
+                    anchor: multiple
+                        ? new naver.maps.Point(GROUP_PIN_WIDTH / 2, GROUP_PIN_HEIGHT)
+                        : new naver.maps.Point(PIN_WIDTH / 2, PIN_HEIGHT)
                 }
             });
             naver.maps.Event.addListener(marker, 'click', function () {
-                showDetail(store);
-                openNaverPlacePopup(store);
+                if (multiple) {
+                    // 점포가 여러 곳이면 팝업 대신 목록에서 고르게 한다.
+                    selectedGroupKey = group.key;
+                    el('storeDetail').classList.add('hidden');
+                    renderStoreList();
+                } else {
+                    showDetail(group.stores[0]);
+                    openNaverPlacePopup(group.stores[0]);
+                }
             });
             markers.push(marker);
-
-            var item = document.createElement('div');
-            item.className = 'store-list-item';
-            item.textContent = store.name + ' (' + (store.roadAddress || '') + ')';
-            item.addEventListener('click', function () {
-                map.panTo(position);
-                showDetail(store);
-            });
-            listEl.appendChild(item);
         });
+
+        renderStoreList();
     }
 
     function fetchStores() {

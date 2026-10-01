@@ -24,14 +24,17 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final CurrencyTypeRepository currencyTypeRepository;
     private final NaverGeocodingClient naverGeocodingClient;
+    private final CategoryService categoryService;
 
     public StoreService(
             StoreRepository storeRepository,
             CurrencyTypeRepository currencyTypeRepository,
-            NaverGeocodingClient naverGeocodingClient) {
+            NaverGeocodingClient naverGeocodingClient,
+            CategoryService categoryService) {
         this.storeRepository = storeRepository;
         this.currencyTypeRepository = currencyTypeRepository;
         this.naverGeocodingClient = naverGeocodingClient;
+        this.categoryService = categoryService;
     }
 
     public StoreSearchResponse searchInBounds(
@@ -40,15 +43,23 @@ public class StoreService {
             double neLat,
             double neLng,
             Long currencyTypeId,
-            String category,
+            List<String> categoryGroups,
+            List<String> categories,
             String keyword,
             int zoom) {
-        long count = storeRepository.countInBounds(swLat, swLng, neLat, neLng, currencyTypeId, category, keyword);
+        List<String> resolved = categoryService.resolve(categoryGroups, categories);
+        int categoryCount = resolved.size();
+        // 업종 조건이 없을 때도 IN 절에는 값이 하나 필요해서 빈 문자열을 넣는다 (categoryCount=0이면 조건이 무시됨).
+        List<String> categoryParam = resolved.isEmpty() ? List.of("") : resolved;
+
+        long count = storeRepository.countInBounds(
+                swLat, swLng, neLat, neLng, currencyTypeId, categoryCount, categoryParam, keyword);
 
         if (count > CLUSTER_THRESHOLD) {
             double cellSize = gridCellSize(zoom);
             List<ClusterResponse> clusters = storeRepository
-                    .clusterInBounds(swLat, swLng, neLat, neLng, currencyTypeId, category, keyword, cellSize)
+                    .clusterInBounds(
+                            swLat, swLng, neLat, neLng, currencyTypeId, categoryCount, categoryParam, keyword, cellSize)
                     .stream()
                     .map(ClusterResponse::from)
                     .toList();
@@ -56,17 +67,21 @@ public class StoreService {
         }
 
         List<StoreResponse> stores = storeRepository
-                .searchInBounds(swLat, swLng, neLat, neLng, currencyTypeId, category, keyword)
+                .searchInBounds(swLat, swLng, neLat, neLng, currencyTypeId, categoryCount, categoryParam, keyword)
                 .stream()
                 .map(StoreResponse::from)
                 .toList();
         return StoreSearchResponse.individual(stores);
     }
 
+    /** 격자 한 칸이 화면에서 대략 이 픽셀 크기가 되도록 한다. */
+    private static final double CLUSTER_CELL_PIXELS = 80;
+
     /** 슬리피맵 타일과 비슷하게, 확대할수록(zoom↑) 격자 한 칸이 좁아지도록 근사한다. */
     private double gridCellSize(int zoom) {
         int safeZoom = Math.max(0, Math.min(zoom, 21));
-        return 360.0 / (256.0 * Math.pow(2, safeZoom));
+        double degreesPerPixel = 360.0 / (256.0 * Math.pow(2, safeZoom));
+        return degreesPerPixel * CLUSTER_CELL_PIXELS;
     }
 
     public List<StoreResponse> listAll(org.springframework.data.domain.Pageable pageable) {

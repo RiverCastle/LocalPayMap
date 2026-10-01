@@ -188,6 +188,30 @@
                 });
         });
 
+        el('stagingImportButton').addEventListener('click', function () {
+            el('stagingImportStatus').textContent = '가져오는 중... (수만 건이라 시간이 걸릴 수 있습니다)';
+            fetch('/admin/api/stores/import-suwon-staging', {
+                method: 'POST',
+                headers: csrfOnlyHeaders()
+            })
+                .then(function (res) {
+                    return res.json().then(function (body) {
+                        if (!res.ok) throw new Error(body.message || '가져오기 실패 (HTTP ' + res.status + ')');
+                        return body;
+                    });
+                })
+                .then(function (result) {
+                    el('stagingImportStatus').textContent =
+                        result.status + ' - 신규 ' + result.insertedCount + '건, 수정 ' + result.updatedCount + '건';
+                    loadSyncLogs();
+                    loadStores();
+                    loadCurrencyTypes();
+                })
+                .catch(function (err) {
+                    el('stagingImportStatus').textContent = err.message;
+                });
+        });
+
         el('storeForm').addEventListener('submit', function (event) {
             event.preventDefault();
             var id = el('storeId').value;

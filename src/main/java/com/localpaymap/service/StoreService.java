@@ -63,10 +63,14 @@ public class StoreService {
         return StoreSearchResponse.individual(stores);
     }
 
+    /** 격자 한 칸이 화면에서 대략 이 픽셀 크기가 되도록 한다. */
+    private static final double CLUSTER_CELL_PIXELS = 80;
+
     /** 슬리피맵 타일과 비슷하게, 확대할수록(zoom↑) 격자 한 칸이 좁아지도록 근사한다. */
     private double gridCellSize(int zoom) {
         int safeZoom = Math.max(0, Math.min(zoom, 21));
-        return 360.0 / (256.0 * Math.pow(2, safeZoom));
+        double degreesPerPixel = 360.0 / (256.0 * Math.pow(2, safeZoom));
+        return degreesPerPixel * CLUSTER_CELL_PIXELS;
     }
 
     public List<StoreResponse> listAll(org.springframework.data.domain.Pageable pageable) {

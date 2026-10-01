@@ -279,14 +279,48 @@
         });
     }
 
+    var PIN_WIDTH = 22;
+    var PIN_HEIGHT = 30;
+    // 이 줌 이상에서만 상호를 항상 표시한다. (그보다 멀리서는 라벨이 서로 겹쳐 읽을 수 없으므로 마우스를 올릴 때만 표시)
+    var LABEL_MIN_ZOOM = 16;
+
+    function escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function storeMarkerHtml(store, showLabel) {
+        return (
+            '<div class="store-marker' +
+            (showLabel ? ' labeled' : '') +
+            '">' +
+            '<svg class="store-pin" width="' + PIN_WIDTH + '" height="' + PIN_HEIGHT + '" viewBox="0 0 22 30">' +
+            '<path d="M11 0C4.9 0 0 4.9 0 11c0 8.2 11 19 11 19s11-10.8 11-19C22 4.9 17.1 0 11 0z" fill="#2f6fed"/>' +
+            '<circle cx="11" cy="11" r="4.5" fill="#fff"/></svg>' +
+            '<span class="store-label">' + escapeHtml(store.name) + '</span>' +
+            '</div>'
+        );
+    }
+
     function renderStores(stores) {
         clearMarkers();
         var listEl = el('storeList');
         listEl.innerHTML = '';
+        var showLabels = map.getZoom() >= LABEL_MIN_ZOOM;
 
         stores.forEach(function (store) {
             var position = new naver.maps.LatLng(store.lat, store.lng);
-            var marker = new naver.maps.Marker({ position: position, map: map });
+            var marker = new naver.maps.Marker({
+                position: position,
+                map: map,
+                icon: {
+                    content: storeMarkerHtml(store, showLabels),
+                    anchor: new naver.maps.Point(PIN_WIDTH / 2, PIN_HEIGHT)
+                }
+            });
             naver.maps.Event.addListener(marker, 'click', function () {
                 showDetail(store);
                 openNaverPlacePopup(store);

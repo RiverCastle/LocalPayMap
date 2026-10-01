@@ -16,11 +16,16 @@
         <select id="currencyTypeSelect">
             <option value="">전체 지역화폐</option>
         </select>
-        <input id="categoryInput" type="text" placeholder="업종 (예: 음식점)" />
+        <div class="category-search">
+            <input id="categoryInput" type="text" placeholder="세부 업종 검색 (예: 치과)" autocomplete="off" />
+            <ul id="categorySuggestions" class="category-suggestions hidden"></ul>
+        </div>
         <input id="keywordInput" type="text" placeholder="가맹점명 검색" />
         <button id="searchButton" type="button">검색</button>
         <button id="locateButton" type="button">내 위치로 이동</button>
     </section>
+
+    <section id="categoryChips" class="category-chips" aria-label="업종 필터"></section>
 
     <main>
         <div id="map"></div>

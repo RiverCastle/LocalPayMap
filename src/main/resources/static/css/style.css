@@ -240,3 +240,92 @@ main {
     border-radius: 4px;
     cursor: pointer;
 }
+
+/* 업종 필터: 칩 + 자동완성 */
+.category-search {
+    position: relative;
+}
+
+.category-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 20;
+    min-width: 240px;
+    max-height: 280px;
+    overflow-y: auto;
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.category-suggestions li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.category-suggestions li.active,
+.category-suggestions li:hover {
+    background: #eef3ff;
+}
+
+.category-suggestions .suggestion-meta {
+    color: #888;
+    white-space: nowrap;
+}
+
+.category-chips {
+    display: flex;
+    gap: 6px;
+    padding: 8px 20px;
+    overflow-x: auto;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.category-chips:empty {
+    display: none;
+}
+
+.chip {
+    padding: 5px 11px;
+    font-size: 13px;
+    background: #fff;
+    color: #333;
+    border: 1px solid #c8d3ea;
+    border-radius: 16px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.chip .chip-count {
+    margin-left: 4px;
+    color: #888;
+    font-size: 11px;
+}
+
+.chip.selected {
+    background: #2f6fed;
+    border-color: #2f6fed;
+    color: #fff;
+}
+
+.chip.selected .chip-count {
+    color: #dbe6ff;
+}
+
+.chip.chip-item::after {
+    content: " \00d7";
+}
+
+.category-suggestions.hidden {
+    display: none;
+}

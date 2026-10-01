@@ -26,6 +26,160 @@
             });
     }
 
+    // 업종 필터 상태: 그룹 칩(여러 개 선택 가능) + 자동완성으로 고른 세부 업종
+    var selectedGroups = [];
+    var selectedItems = []; // { value, label }
+    var categoryData = { groups: [], items: [] };
+    var activeSuggestion = -1;
+
+    function toggle(list, predicate, entry) {
+        var idx = list.findIndex(predicate);
+        if (idx >= 0) list.splice(idx, 1);
+        else list.push(entry);
+    }
+
+    function renderChips() {
+        var box = el('categoryChips');
+        box.innerHTML = '';
+
+        function addChip(label, count, selected, extraClass, onClick) {
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip' + (selected ? ' selected' : '') + (extraClass ? ' ' + extraClass : '');
+            chip.textContent = label;
+            if (count != null) {
+                var span = document.createElement('span');
+                span.className = 'chip-count';
+                span.textContent = count.toLocaleString();
+                chip.appendChild(span);
+            }
+            chip.addEventListener('click', onClick);
+            box.appendChild(chip);
+        }
+
+        if (categoryData.groups.length === 0) return;
+
+        var anySelected = selectedGroups.length > 0 || selectedItems.length > 0;
+        addChip('전체', null, !anySelected, '', function () {
+            selectedGroups = [];
+            selectedItems = [];
+            renderChips();
+            fetchStores();
+        });
+        categoryData.groups.forEach(function (group) {
+            addChip(group.name, group.count, selectedGroups.indexOf(group.name) >= 0, '', function () {
+                toggle(selectedGroups, function (g) { return g === group.name; }, group.name);
+                renderChips();
+                fetchStores();
+            });
+        });
+        selectedItems.forEach(function (item) {
+            addChip(item.label, null, true, 'chip-item', function () {
+                toggle(selectedItems, function (i) { return i.value === item.value; }, item);
+                renderChips();
+                fetchStores();
+            });
+        });
+    }
+
+    function loadCategories() {
+        fetch('/api/categories')
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                categoryData = data;
+                renderChips();
+            })
+            .catch(function (err) {
+                console.error('업종 목록 조회 실패', err);
+            });
+    }
+
+    function hideSuggestions() {
+        el('categorySuggestions').classList.add('hidden');
+        activeSuggestion = -1;
+    }
+
+    function pickSuggestion(item) {
+        if (!selectedItems.some(function (i) { return i.value === item.value; })) {
+            selectedItems.push({ value: item.value, label: item.label });
+        }
+        el('categoryInput').value = '';
+        hideSuggestions();
+        renderChips();
+        fetchStores();
+    }
+
+    function renderSuggestions() {
+        var query = el('categoryInput').value.trim().toLowerCase();
+        var list = el('categorySuggestions');
+        list.innerHTML = '';
+        activeSuggestion = -1;
+        if (!query) {
+            hideSuggestions();
+            return;
+        }
+        var matches = categoryData.items
+            .filter(function (item) {
+                return item.label.toLowerCase().indexOf(query) >= 0 || item.group.indexOf(query) >= 0;
+            })
+            .slice(0, 8);
+        if (matches.length === 0) {
+            hideSuggestions();
+            return;
+        }
+        matches.forEach(function (item) {
+            var li = document.createElement('li');
+            var name = document.createElement('span');
+            name.textContent = item.label;
+            var meta = document.createElement('span');
+            meta.className = 'suggestion-meta';
+            meta.textContent = item.group + ' · ' + item.count.toLocaleString() + '곳';
+            li.appendChild(name);
+            li.appendChild(meta);
+            // blur보다 먼저 선택되도록 mousedown 사용
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                pickSuggestion(item);
+            });
+            list.appendChild(li);
+        });
+        list.classList.remove('hidden');
+    }
+
+    function moveSuggestion(delta) {
+        var items = el('categorySuggestions').children;
+        if (!items.length) return;
+        if (activeSuggestion >= 0) items[activeSuggestion].classList.remove('active');
+        activeSuggestion = (activeSuggestion + delta + items.length) % items.length;
+        items[activeSuggestion].classList.add('active');
+    }
+
+    function bindCategoryInput() {
+        var input = el('categoryInput');
+        input.addEventListener('input', renderSuggestions);
+        input.addEventListener('blur', hideSuggestions);
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                moveSuggestion(1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                moveSuggestion(-1);
+            } else if (event.key === 'Enter') {
+                var items = el('categorySuggestions').children;
+                if (items.length) {
+                    event.preventDefault();
+                    var target = items[activeSuggestion >= 0 ? activeSuggestion : 0];
+                    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                }
+            } else if (event.key === 'Escape') {
+                hideSuggestions();
+            }
+        });
+    }
+
     function clearMarkers() {
         markers.forEach(function (marker) {
             marker.setMap(null);
@@ -118,11 +272,16 @@
         });
 
         var currencyTypeId = el('currencyTypeSelect').value;
-        var category = el('categoryInput').value.trim();
         var keyword = el('keywordInput').value.trim();
         if (currencyTypeId) params.set('currencyTypeId', currencyTypeId);
-        if (category) params.set('category', category);
         if (keyword) params.set('keyword', keyword);
+        // 업종값에 쉼표가 들어 있어 쉼표 구분 대신 반복 파라미터로 보낸다.
+        selectedGroups.forEach(function (group) {
+            params.append('categoryGroups', group);
+        });
+        selectedItems.forEach(function (item) {
+            params.append('categories', item.value);
+        });
 
         fetch('/api/stores?' + params.toString())
             .then(function (res) {
@@ -159,7 +318,9 @@
             });
         });
 
+        bindCategoryInput();
         loadCurrencyTypes();
+        loadCategories();
         fetchStores();
     }
 

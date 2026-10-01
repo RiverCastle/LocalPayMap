@@ -13,12 +13,16 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
 
     long countBySource(StoreSource source);
 
+    @Query("select s.category as category, count(s) as cnt from Store s "
+            + "where s.category is not null group by s.category")
+    java.util.List<CategoryCountProjection> countByCategory();
+
     @Query(
             "select s from Store s "
                     + "where s.lat between :swLat and :neLat "
                     + "and s.lng between :swLng and :neLng "
                     + "and (:currencyTypeId is null or s.currencyType.id = :currencyTypeId) "
-                    + "and (:category is null or s.category = :category) "
+                    + "and (:categoryCount = 0 or s.category in :categories) "
                     + "and (:keyword is null or s.name like concat('%', :keyword, '%'))")
     java.util.List<Store> searchInBounds(
             @Param("swLat") double swLat,
@@ -26,7 +30,8 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
             @Param("neLat") double neLat,
             @Param("neLng") double neLng,
             @Param("currencyTypeId") Long currencyTypeId,
-            @Param("category") String category,
+            @Param("categoryCount") int categoryCount,
+            @Param("categories") java.util.List<String> categories,
             @Param("keyword") String keyword);
 
     @Query(
@@ -34,7 +39,7 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
                     + "where s.lat between :swLat and :neLat "
                     + "and s.lng between :swLng and :neLng "
                     + "and (:currencyTypeId is null or s.currencyType.id = :currencyTypeId) "
-                    + "and (:category is null or s.category = :category) "
+                    + "and (:categoryCount = 0 or s.category in :categories) "
                     + "and (:keyword is null or s.name like concat('%', :keyword, '%'))")
     long countInBounds(
             @Param("swLat") double swLat,
@@ -42,7 +47,8 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
             @Param("neLat") double neLat,
             @Param("neLng") double neLng,
             @Param("currencyTypeId") Long currencyTypeId,
-            @Param("category") String category,
+            @Param("categoryCount") int categoryCount,
+            @Param("categories") java.util.List<String> categories,
             @Param("keyword") String keyword);
 
     @Query(
@@ -53,7 +59,7 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
                     + "  where lat between :swLat and :neLat "
                     + "  and lng between :swLng and :neLng "
                     + "  and (:currencyTypeId is null or currency_type_id = :currencyTypeId) "
-                    + "  and (:category is null or category = :category) "
+                    + "  and (:categoryCount = 0 or category in (:categories)) "
                     + "  and (:keyword is null or name like concat('%', :keyword, '%'))"
                     + ") grid "
                     + "group by gx, gy",
@@ -64,7 +70,8 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
             @Param("neLat") double neLat,
             @Param("neLng") double neLng,
             @Param("currencyTypeId") Long currencyTypeId,
-            @Param("category") String category,
+            @Param("categoryCount") int categoryCount,
+            @Param("categories") java.util.List<String> categories,
             @Param("keyword") String keyword,
             @Param("cellSize") double cellSize);
 }

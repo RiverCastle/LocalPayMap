@@ -2,6 +2,7 @@
     var map;
     var markers = [];
     var CLUSTER_ZOOM_STEP = 2;
+    var NEARBY_ZOOM = 16;
 
     function el(id) {
         return document.getElementById(id);
@@ -493,6 +494,25 @@
             });
     }
 
+    var myMarker = null;
+
+    /** 현재 위치를 파란 점으로 표시한다. (가맹점 마커와 별개라 조회 시 지워지지 않는다) */
+    function showMyLocationMarker(position) {
+        if (myMarker) {
+            myMarker.setPosition(position);
+            return;
+        }
+        myMarker = new naver.maps.Marker({
+            position: position,
+            map: map,
+            zIndex: 100,
+            icon: {
+                content: '<div class="my-location-marker"></div>',
+                anchor: new naver.maps.Point(9, 9)
+            }
+        });
+    }
+
     function initMap() {
         var container = document.getElementById('map');
         var defaultCenter = new naver.maps.LatLng(37.5665, 126.978); // 서울시청 기본 위치
@@ -506,10 +526,19 @@
         });
         el('locateButton').addEventListener('click', function () {
             if (!navigator.geolocation) return;
-            navigator.geolocation.getCurrentPosition(function (position) {
-                var loc = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
-                map.setCenter(loc);
-            });
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    var loc = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                    // 이동하면 map의 idle 이벤트로 해당 위치의 가맹점이 자동 조회된다.
+                    showMyLocationMarker(loc);
+                    map.setCenter(loc);
+                    map.setZoom(NEARBY_ZOOM);
+                },
+                function (err) {
+                    alert(err.code === 1 ? '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.' : '현재 위치를 가져오지 못했습니다.');
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
         });
 
         bindCategoryInput();

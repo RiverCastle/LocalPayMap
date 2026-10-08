@@ -1,5 +1,7 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
+  # PaaS의 리버스 프록시(HTTPS 종단) 뒤에서 X-Forwarded-* 헤더를 신뢰
+  forward-headers-strategy: framework
   servlet:
     encoding:
       charset: UTF-8
@@ -21,7 +23,7 @@ spring:
       hibernate:
         format_sql: true
   thymeleaf:
-    cache: false
+    cache: ${THYMELEAF_CACHE:true}
   servlet:
     multipart:
       max-file-size: 50MB
@@ -48,4 +50,4 @@ admin:
 
 logging:
   level:
-    com.localpaymap: debug
+    com.localpaymap: ${LOG_LEVEL:info}

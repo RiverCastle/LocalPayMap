@@ -17,6 +17,29 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
             + "where s.category is not null group by s.category")
     java.util.List<CategoryCountProjection> countByCategory();
 
+    @Query("select s.name as name, s.roadAddress as roadAddress, c.id as currencyTypeId, count(s) as cnt "
+            + "from Store s left join s.currencyType c "
+            + "where s.roadAddress is not null "
+            + "group by s.name, s.roadAddress, c.id "
+            + "having count(s) > 1 "
+            + "order by count(s) desc, s.name, s.roadAddress")
+    java.util.List<DuplicateGroupProjection> findDuplicateGroups(org.springframework.data.domain.Pageable pageable);
+
+    @Query(
+            value = "select count(*) from (select 1 from store where road_address is not null "
+                    + "group by name, road_address, currency_type_id having count(*) > 1) t",
+            nativeQuery = true)
+    long countDuplicateGroups();
+
+    @Query("select s from Store s left join s.currencyType c "
+            + "where s.name = :name and s.roadAddress = :roadAddress "
+            + "and ((:currencyTypeId is null and c is null) or c.id = :currencyTypeId) "
+            + "order by s.id")
+    java.util.List<Store> findDuplicateMembers(
+            @Param("name") String name,
+            @Param("roadAddress") String roadAddress,
+            @Param("currencyTypeId") Long currencyTypeId);
+
     @Query(
             "select s from Store s "
                     + "where s.lat between :swLat and :neLat "

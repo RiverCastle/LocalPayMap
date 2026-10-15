@@ -1,10 +1,13 @@
 package com.localpaymap.controller.admin;
 
+import com.localpaymap.dto.DeleteStoresRequest;
+import com.localpaymap.dto.DuplicatePageResponse;
 import com.localpaymap.dto.StoreResponse;
 import com.localpaymap.dto.StoreUpsertRequest;
 import com.localpaymap.service.StoreService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,6 +35,17 @@ public class AdminStoreApiController {
     public List<StoreResponse> list(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
         return storeService.listAll(PageRequest.of(page, size));
+    }
+
+    @GetMapping("/duplicates")
+    public DuplicatePageResponse duplicates(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return storeService.listDuplicates(page, size);
+    }
+
+    @PostMapping("/duplicates/delete")
+    public Map<String, Integer> deleteDuplicates(@Valid @RequestBody DeleteStoresRequest request) {
+        return Map.of("deletedCount", storeService.deleteAll(request.ids()));
     }
 
     @PostMapping

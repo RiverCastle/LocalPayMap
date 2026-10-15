@@ -143,7 +143,76 @@
             });
     }
 
+    var pendingDeleteCount = null;
+
+    function showBulkSummary() {
+        el('bulkStatus').textContent = '';
+        fetch('/admin/api/stores/duplicates/summary', { headers: authHeaders() })
+            .then(function (res) {
+                if (!res.ok) throw new Error('요약 조회 실패 (HTTP ' + res.status + ')');
+                return res.json();
+            })
+            .then(function (s) {
+                var rows = [
+                    ['현재 전체 가맹점 수', s.totalStores],
+                    ['중복 그룹 수', s.duplicateGroups],
+                    ['중복 그룹에 속한 가맹점 수', s.duplicateStores],
+                    ['삭제될 가맹점 수', s.deleteCount],
+                    ['삭제 후 남는 가맹점 수', s.remainingStores]
+                ];
+                var table = el('bulkSummary');
+                table.innerHTML = '';
+                rows.forEach(function (row) {
+                    var tr = document.createElement('tr');
+                    tr.appendChild(text('th', row[0]));
+                    tr.appendChild(text('td', Number(row[1]).toLocaleString() + '건'));
+                    table.appendChild(tr);
+                });
+                pendingDeleteCount = s.deleteCount;
+                el('bulkConfirm').disabled = s.deleteCount === 0;
+                el('bulkPanel').hidden = false;
+                if (s.deleteCount === 0) el('bulkStatus').textContent = '삭제할 중복 데이터가 없습니다.';
+            })
+            .catch(function (err) {
+                el('dupStatus').textContent = err.message;
+            });
+    }
+
+    function runBulkDelete() {
+        if (pendingDeleteCount == null) return;
+        el('bulkConfirm').disabled = true;
+        el('bulkStatus').textContent = '삭제 중...';
+        fetch('/admin/api/stores/duplicates/delete-all', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ expectedDeleteCount: pendingDeleteCount })
+        })
+            .then(function (res) {
+                return res.json().then(function (body) {
+                    if (!res.ok) throw new Error(body.message || '삭제 실패 (HTTP ' + res.status + ')');
+                    return body;
+                });
+            })
+            .then(function (result) {
+                el('bulkPanel').hidden = true;
+                pendingDeleteCount = null;
+                el('dupStatus').textContent = result.deletedCount + '건 일괄 삭제되었습니다.';
+                page = 0;
+                load();
+            })
+            .catch(function (err) {
+                el('bulkStatus').textContent = err.message;
+                el('bulkConfirm').disabled = false;
+            });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        el('deleteAllButton').addEventListener('click', showBulkSummary);
+        el('bulkConfirm').addEventListener('click', runBulkDelete);
+        el('bulkCancel').addEventListener('click', function () {
+            el('bulkPanel').hidden = true;
+            pendingDeleteCount = null;
+        });
         el('autoSelectAll').addEventListener('click', selectAllButFirst);
         el('deleteSelected').addEventListener('click', deleteSelected);
         el('prevPage').addEventListener('click', function () {

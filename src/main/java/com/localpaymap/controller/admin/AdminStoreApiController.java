@@ -1,7 +1,9 @@
 package com.localpaymap.controller.admin;
 
+import com.localpaymap.dto.DeleteAllDuplicatesRequest;
 import com.localpaymap.dto.DeleteStoresRequest;
 import com.localpaymap.dto.DuplicatePageResponse;
+import com.localpaymap.dto.DuplicateSummaryResponse;
 import com.localpaymap.dto.StoreResponse;
 import com.localpaymap.dto.StoreUpsertRequest;
 import com.localpaymap.service.StoreService;
@@ -41,6 +43,16 @@ public class AdminStoreApiController {
     public DuplicatePageResponse duplicates(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return storeService.listDuplicates(page, size);
+    }
+
+    @GetMapping("/duplicates/summary")
+    public DuplicateSummaryResponse duplicateSummary() {
+        return storeService.summarizeDuplicates();
+    }
+
+    @PostMapping("/duplicates/delete-all")
+    public Map<String, Integer> deleteAllDuplicates(@Valid @RequestBody DeleteAllDuplicatesRequest request) {
+        return Map.of("deletedCount", storeService.deleteAllDuplicates(request.expectedDeleteCount()));
     }
 
     @PostMapping("/duplicates/delete")

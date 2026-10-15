@@ -30,6 +30,19 @@
                 <button id="deleteSelected" type="button">선택 항목 삭제</button>
                 <span id="dupStatus"></span>
             </div>
+            <div style="margin:8px 0">
+                <button id="deleteAllButton" type="button">전체 중복 일괄 삭제...</button>
+            </div>
+            <div id="bulkPanel" hidden style="border:2px solid #c0392b;padding:12px;margin:12px 0;background:#fff7f6">
+                <h3 style="margin:0 0 8px">전체 중복 일괄 삭제 확인</h3>
+                <table id="bulkSummary" style="width:auto"></table>
+                <p style="font-size:13px;color:#c0392b">
+                    페이지·선택과 관계없이 모든 중복 그룹에서 가장 먼저 등록된 1건만 남기고 삭제합니다. 삭제 후에는 되돌릴 수 없습니다.
+                </p>
+                <button id="bulkConfirm" type="button">위 내용을 확인했으며 삭제 실행</button>
+                <button id="bulkCancel" type="button">취소</button>
+                <span id="bulkStatus"></span>
+            </div>
             <div id="dupGroups"></div>
             <div style="margin-top:12px">
                 <button id="prevPage" type="button">이전</button>

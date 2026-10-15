@@ -7,6 +7,7 @@ import com.localpaymap.domain.StoreSource;
 import com.localpaymap.dto.ClusterResponse;
 import com.localpaymap.dto.DuplicateGroupResponse;
 import com.localpaymap.dto.DuplicatePageResponse;
+import com.localpaymap.dto.DuplicateSummaryResponse;
 import com.localpaymap.dto.StoreResponse;
 import com.localpaymap.dto.StoreSearchResponse;
 import com.localpaymap.dto.StoreUpsertRequest;
@@ -164,6 +165,30 @@ public class StoreService {
                                 .toList()))
                 .toList();
         return new DuplicatePageResponse(storeRepository.countDuplicateGroups(), safePage, safeSize, groups);
+    }
+
+    /** 중복 일괄 삭제 전에 보여줄 현황 요약. 그룹당 1건은 유지되므로 삭제 대상은 (그룹에 속한 수 - 그룹 수). */
+    public DuplicateSummaryResponse summarizeDuplicates() {
+        var summary = storeRepository.summarizeDuplicates();
+        long groups = summary.getGroupCount();
+        long duplicateStores = summary.getDuplicateStoreCount();
+        long total = storeRepository.count();
+        long deleteCount = duplicateStores - groups;
+        return new DuplicateSummaryResponse(total, groups, duplicateStores, deleteCount, total - deleteCount);
+    }
+
+    /** 모든 중복 그룹에서 가장 먼저 등록된 1건만 남기고 삭제한다. 확인 이후 데이터가 바뀌었으면 삭제하지 않는다. */
+    @Transactional
+    public int deleteAllDuplicates(long expectedDeleteCount) {
+        List<Long> ids = storeRepository.findRedundantDuplicateIds();
+        if (ids.size() != expectedDeleteCount) {
+            throw new IllegalArgumentException("확인 이후 데이터가 변경되었습니다 (확인 " + expectedDeleteCount + "건 / 현재 "
+                    + ids.size() + "건). 다시 확인해 주세요.");
+        }
+        for (int from = 0; from < ids.size(); from += 1000) {
+            storeRepository.deleteAllByIdInBatch(ids.subList(from, Math.min(from + 1000, ids.size())));
+        }
+        return ids.size();
     }
 
     @Transactional

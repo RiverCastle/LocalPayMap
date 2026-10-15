@@ -420,3 +420,124 @@ main {
     border: 3px solid #fff;
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.35), 0 2px 6px rgba(0, 0, 0, 0.3);
 }
+
+/* ===== 스마트폰 세로 화면 전용 (웹/가로 화면에는 영향 없음) ===== */
+@media (max-width: 768px) and (orientation: portrait) {
+    body.map-page {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .app-header {
+        padding: 10px 14px;
+    }
+
+    .app-header h1 {
+        font-size: 16px;
+    }
+
+    .filter-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        padding: 8px 12px;
+    }
+
+    .filter-bar #currencyTypeSelect,
+    .filter-bar .category-search,
+    .filter-bar #keywordInput {
+        grid-column: 1 / -1;
+    }
+
+    .filter-bar select,
+    .filter-bar input,
+    .filter-bar button {
+        width: 100%;
+        min-height: 40px;
+        font-size: 16px; /* iOS 입력 시 자동 확대 방지 */
+    }
+
+    .category-suggestions {
+        min-width: 0;
+        width: 100%;
+        max-height: 40vh;
+    }
+
+    .category-chips {
+        flex-wrap: nowrap;
+        padding: 6px 12px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    main {
+        flex: 1;
+        min-height: 0;
+        height: auto;
+        flex-direction: column;
+    }
+
+    #map {
+        flex: 0 0 55%;
+        min-height: 0;
+    }
+
+    #storeList {
+        flex: 1;
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #e0e0e0;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .store-list-item {
+        padding: 14px;
+        font-size: 14px;
+    }
+
+    /* 상세 정보: 하단 시트 형태 */
+    .store-detail {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-height: 50vh;
+        overflow-y: auto;
+        border-radius: 14px 14px 0 0;
+        padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+        z-index: 30;
+    }
+
+    .store-detail p {
+        font-size: 14px;
+    }
+
+    .close-btn {
+        top: 6px;
+        right: 8px;
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+    }
+
+    .chip {
+        padding: 7px 12px;
+    }
+
+    /* 관리자 화면 */
+    .admin-container {
+        margin: 16px auto;
+        padding: 0 12px;
+        overflow-x: auto;
+    }
+
+    .admin-form {
+        grid-template-columns: 1fr;
+    }
+
+    .login-container {
+        margin: 40px 16px;
+    }
+}

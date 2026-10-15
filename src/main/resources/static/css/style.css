@@ -541,3 +541,33 @@ main {
         margin: 40px 16px;
     }
 }
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.auth-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.auth-btn {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 0;
+    cursor: pointer;
+    text-decoration: none;
+    background: #fee500;
+    color: #191919;
+}
+
+.auth-btn.secondary {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}

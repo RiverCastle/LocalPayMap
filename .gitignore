@@ -38,3 +38,6 @@ out/
 
 ### Claude Code (local-only settings) ###
 .claude/
+
+### Local secrets (never commit) ###
+application-*-secret.yml

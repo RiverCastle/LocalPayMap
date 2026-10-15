@@ -17,4 +17,9 @@ public class AdminPageController {
     public String stores() {
         return "admin/stores";
     }
+
+    @GetMapping("/stores/duplicates")
+    public String duplicateStores() {
+        return "admin/duplicates";
+    }
 }

@@ -9,6 +9,7 @@
     <header class="app-header">
         <h1>가맹점 관리</h1>
         <div>
+            <a class="admin-link" th:href="@{/admin/stores/duplicates}">중복 가맹점</a>
             <a class="admin-link" th:href="@{/}">지도로 이동</a>
             <form th:action="@{/admin/logout}" method="post" style="display:inline">
                 <button type="submit" class="admin-link" style="background:none;cursor:pointer">로그아웃</button>

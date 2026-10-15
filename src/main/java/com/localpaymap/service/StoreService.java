@@ -5,6 +5,8 @@ import com.localpaymap.domain.CurrencyType;
 import com.localpaymap.domain.Store;
 import com.localpaymap.domain.StoreSource;
 import com.localpaymap.dto.ClusterResponse;
+import com.localpaymap.dto.DuplicateGroupResponse;
+import com.localpaymap.dto.DuplicatePageResponse;
 import com.localpaymap.dto.StoreResponse;
 import com.localpaymap.dto.StoreSearchResponse;
 import com.localpaymap.dto.StoreUpsertRequest;
@@ -142,6 +144,33 @@ public class StoreService {
     @Transactional
     public void delete(Long id) {
         storeRepository.deleteById(id);
+    }
+
+    /** 지역화폐·가맹점명·도로명주소가 모두 같은 가맹점 묶음을 중복 건수 많은 순으로 조회한다. */
+    public DuplicatePageResponse listDuplicates(int page, int size) {
+        int safeSize = Math.max(1, Math.min(size, 100));
+        int safePage = Math.max(0, page);
+        List<DuplicateGroupResponse> groups = storeRepository
+                .findDuplicateGroups(org.springframework.data.domain.PageRequest.of(safePage, safeSize))
+                .stream()
+                .map(g -> new DuplicateGroupResponse(
+                        g.getName(),
+                        g.getRoadAddress(),
+                        g.getCurrencyTypeId(),
+                        storeRepository
+                                .findDuplicateMembers(g.getName(), g.getRoadAddress(), g.getCurrencyTypeId())
+                                .stream()
+                                .map(StoreResponse::from)
+                                .toList()))
+                .toList();
+        return new DuplicatePageResponse(storeRepository.countDuplicateGroups(), safePage, safeSize, groups);
+    }
+
+    @Transactional
+    public int deleteAll(List<Long> ids) {
+        List<Store> stores = storeRepository.findAllById(ids);
+        storeRepository.deleteAll(stores);
+        return stores.size();
     }
 
     private CurrencyType getCurrencyTypeOrThrow(Long currencyTypeId) {

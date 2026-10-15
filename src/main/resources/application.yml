@@ -48,6 +48,17 @@ admin:
   default-username: ${ADMIN_DEFAULT_USERNAME:admin}
   default-password: ${ADMIN_DEFAULT_PASSWORD:changeme123!}
 
+# 사용자 로그인(소셜 + JWT). 시크릿은 환경변수로만 주입한다.
+auth:
+  cookie-secure: ${AUTH_COOKIE_SECURE:true}
+  jwt:
+    secret: ${JWT_SECRET:} # 32자 이상 필수
+    access-ttl: ${JWT_ACCESS_TTL:15m}
+    refresh-ttl: ${JWT_REFRESH_TTL:14d}
+  kakao: # 카카오 개발자센터 > 앱 키 > REST API 키 / 카카오 로그인 > 보안 > Client Secret
+    client-id: ${KAKAO_CLIENT_ID:}
+    client-secret: ${KAKAO_CLIENT_SECRET:}
+
 logging:
   level:
     com.localpaymap: ${LOG_LEVEL:info}

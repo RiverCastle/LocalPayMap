@@ -22,6 +22,7 @@
         </div>
         <input id="keywordInput" type="text" placeholder="가맹점명 검색" />
         <button id="searchButton" type="button">검색</button>
+        <button id="filterToggle" type="button" class="filter-toggle" aria-expanded="false" aria-label="필터 열기">필터</button>
         <button id="locateButton" type="button">내 주변 가맹점</button>
     </section>
 
@@ -29,7 +30,14 @@
 
     <main>
         <div id="map"></div>
-        <aside id="storeList" aria-label="가맹점 목록"></aside>
+        <button id="locateFab" type="button" class="locate-fab" aria-label="내 주변 가맹점">&#9737;</button>
+        <aside id="listPanel" class="list-panel">
+            <div id="sheetHandle" class="sheet-handle" role="button" tabindex="0" aria-label="가맹점 목록 펼치기/접기">
+                <span class="sheet-grip"></span>
+                <span id="sheetSummary" class="sheet-summary">가맹점 목록</span>
+            </div>
+            <div id="storeList" aria-label="가맹점 목록"></div>
+        </aside>
     </main>
 
     <div id="storeDetail" class="store-detail hidden">

@@ -65,11 +65,24 @@ main {
     flex: 1;
 }
 
-#storeList {
+.list-panel {
     width: 300px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     border-left: 1px solid #e0e0e0;
     background: #fff;
+}
+
+#storeList {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.sheet-handle,
+.filter-toggle,
+.locate-fab {
+    display: none;
 }
 
 .store-list-item {
@@ -472,23 +485,131 @@ main {
         -webkit-overflow-scrolling: touch;
     }
 
+    .filter-bar {
+        grid-template-columns: 1fr auto auto;
+    }
+
+    .filter-bar #keywordInput {
+        grid-column: auto;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    .filter-bar #searchButton,
+    .filter-bar .filter-toggle {
+        width: auto;
+        padding: 0 14px;
+        grid-row: 1;
+    }
+
+    .filter-toggle {
+        display: block;
+        background: #fff;
+        color: #2f6fed;
+        border: 1px solid #2f6fed;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .filter-toggle[aria-expanded="true"] {
+        background: #2f6fed;
+        color: #fff;
+    }
+
+    .filter-bar #currencyTypeSelect,
+    .filter-bar .category-search,
+    .filter-bar #locateButton {
+        display: none;
+    }
+
+    .filter-bar.open #currencyTypeSelect,
+    .filter-bar.open .category-search,
+    .filter-bar.open #locateButton {
+        display: block;
+        grid-row: auto;
+    }
+
+    .filter-bar.open #locateButton {
+        grid-column: 1 / -1;
+    }
+
+    /* 지도: 남는 공간 전체 */
     main {
         flex: 1;
         min-height: 0;
         height: auto;
-        flex-direction: column;
+        position: relative;
+        overflow: hidden;
     }
 
     #map {
-        flex: 0 0 55%;
-        min-height: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .locate-fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        right: 12px;
+        bottom: 84px;
+        z-index: 15;
+        width: 44px;
+        height: 44px;
+        font-size: 22px;
+        color: #1a73e8;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    /* 가맹점 목록: 하단 바텀시트 */
+    .list-panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 70%;
+        z-index: 20;
+        border-left: none;
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.2);
+        transform: translateY(calc(100% - 68px - env(safe-area-inset-bottom)));
+        transition: transform 0.25s ease;
+    }
+
+    .list-panel.expanded {
+        transform: translateY(0);
+    }
+
+    .sheet-handle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        flex: 0 0 auto;
+        padding: 8px 14px 10px;
+        cursor: pointer;
+        touch-action: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    .sheet-grip {
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: #c4c8d0;
+    }
+
+    .sheet-summary {
+        font-size: 14px;
+        font-weight: bold;
     }
 
     #storeList {
-        flex: 1;
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid #e0e0e0;
         -webkit-overflow-scrolling: touch;
     }
 

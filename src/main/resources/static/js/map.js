@@ -249,8 +249,50 @@
         return 'cluster-sm';
     }
 
+    function setSheetSummary(text) {
+        el('sheetSummary').textContent = text;
+    }
+
+    function setSheetExpanded(expanded) {
+        el('listPanel').classList.toggle('expanded', expanded);
+    }
+
+    function bindSheet() {
+        var handle = el('sheetHandle');
+        var panel = el('listPanel');
+        var startY = null;
+        handle.addEventListener('touchstart', function (e) {
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+        handle.addEventListener('touchend', function (e) {
+            if (startY === null) return;
+            var dy = e.changedTouches[0].clientY - startY;
+            startY = null;
+            if (dy < -30) setSheetExpanded(true);
+            else if (dy > 30) setSheetExpanded(false);
+            else setSheetExpanded(!panel.classList.contains('expanded'));
+            e.preventDefault();
+        });
+        handle.addEventListener('click', function () {
+            setSheetExpanded(!panel.classList.contains('expanded'));
+        });
+        handle.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setSheetExpanded(!panel.classList.contains('expanded'));
+            }
+        });
+        el('filterToggle').addEventListener('click', function () {
+            var open = el('filterToggle').getAttribute('aria-expanded') !== 'true';
+            el('filterToggle').setAttribute('aria-expanded', open);
+            document.querySelector('.filter-bar').classList.toggle('open', open);
+        });
+    }
+
     function renderClusters(clusters) {
         clearMarkers();
+        var total = clusters.reduce(function (sum, c) { return sum + c.count; }, 0);
+        setSheetSummary('가맹점 ' + total.toLocaleString() + '곳 (확대하면 개별 표시)');
         var listEl = el('storeList');
         listEl.innerHTML = '';
         var notice = document.createElement('div');
@@ -417,6 +459,7 @@
     function renderStores(stores) {
         clearMarkers();
         currentGroups = groupByLocation(stores);
+        setSheetSummary('이 지역 가맹점 ' + stores.length.toLocaleString() + '곳');
         var showLabels = map.getZoom() >= LABEL_MIN_ZOOM;
 
         currentGroups.forEach(function (group) {
@@ -513,6 +556,23 @@
         });
     }
 
+    function locate() {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                var loc = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                // 이동하면 map의 idle 이벤트로 해당 위치의 가맹점이 자동 조회된다.
+                showMyLocationMarker(loc);
+                map.setCenter(loc);
+                map.setZoom(NEARBY_ZOOM);
+            },
+            function (err) {
+                alert(err.code === 1 ? '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.' : '현재 위치를 가져오지 못했습니다.');
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+
     function initMap() {
         var container = document.getElementById('map');
         var defaultCenter = new naver.maps.LatLng(37.5665, 126.978); // 서울시청 기본 위치
@@ -524,22 +584,9 @@
         el('closeDetailButton').addEventListener('click', function () {
             el('storeDetail').classList.add('hidden');
         });
-        el('locateButton').addEventListener('click', function () {
-            if (!navigator.geolocation) return;
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    var loc = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
-                    // 이동하면 map의 idle 이벤트로 해당 위치의 가맹점이 자동 조회된다.
-                    showMyLocationMarker(loc);
-                    map.setCenter(loc);
-                    map.setZoom(NEARBY_ZOOM);
-                },
-                function (err) {
-                    alert(err.code === 1 ? '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.' : '현재 위치를 가져오지 못했습니다.');
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        });
+        el('locateButton').addEventListener('click', locate);
+        el('locateFab').addEventListener('click', locate);
+        bindSheet();
 
         bindCategoryInput();
         loadCurrencyTypes();

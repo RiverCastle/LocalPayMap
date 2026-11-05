@@ -22,6 +22,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
@@ -84,6 +85,8 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 쿠키 JWT 필터가 요청 속성에 저장한 인증을 SessionManagementFilter도 같은 저장소에서 확인하게 한다.
+                .securityContext(sc -> sc.securityContextRepository(new RequestAttributeSecurityContextRepository()))
                 .oauth2Login(o -> o.authorizationEndpoint(
                                 a -> a.authorizationRequestRepository(authorizationRequestRepository))
                         .successHandler(successHandler)

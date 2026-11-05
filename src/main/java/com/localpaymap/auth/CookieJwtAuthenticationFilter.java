@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -23,6 +24,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class CookieJwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private final RequestAttributeSecurityContextRepository contextRepository =
+            new RequestAttributeSecurityContextRepository();
     private final JwtDecoder jwtDecoder;
     private final Converter<Jwt, ? extends Authentication> converter;
 
@@ -43,6 +46,9 @@ public class CookieJwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContext context = SecurityContextHolder.createEmptyContext();
                 context.setAuthentication(authentication);
                 SecurityContextHolder.setContext(context);
+                // 요청 속성에도 저장해 둬야 SessionManagementFilter가 "새로 인증된 요청"으로 오인하지 않는다.
+                // 오인하면 세션 고정 방어 전략이 매 요청마다 CSRF 토큰(XSRF-TOKEN 쿠키)을 교체/삭제한다.
+                contextRepository.saveContext(context, request, response);
             } catch (JwtException e) {
                 // 익명으로 진행
             }

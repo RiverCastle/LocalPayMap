@@ -210,7 +210,7 @@
         return 'https://map.naver.com/p/search/' + encodeURIComponent(naverSearchQuery(store));
     }
 
-    /** 같은 이름의 창을 재사용하므로 마커를 연속 클릭해도 팝업이 계속 늘어나지 않는다. */
+    /** 상세 패널의 "네이버 지도에서 보기"를 눌렀을 때만 연다. 같은 이름의 창을 재사용하므로 여러 번 눌러도 팝업이 계속 늘어나지 않는다. */
     function openNaverPlacePopup(store) {
         var width = 520;
         var height = Math.min(window.screen.availHeight - 80, 860);
@@ -239,6 +239,7 @@
         el('detailPhone').textContent = store.phone ? '전화: ' + store.phone : '';
         el('detailCategory').textContent = store.category ? '업종: ' + store.category : '';
         el('detailCurrency').textContent = store.currencyName ? '지역화폐: ' + store.currencyName : '';
+        if (window.Favorites) window.Favorites.renderDetail(store);
         el('storeDetail').classList.remove('hidden');
     }
 
@@ -296,14 +297,22 @@
     var GROUP_PIN_WIDTH = 30;
     var GROUP_PIN_HEIGHT = 40;
 
-    /** 단일 가맹점 마커: 파란 핀 + 상호 라벨 */
+    var DEFAULT_MARKER_COLOR = '#2f6fed';
+
+    /** 즐겨찾기 그룹에 담긴 가맹점은 그 그룹의 색으로, 아니면 기본 파란색으로 그린다. */
+    function markerColor(store) {
+        return (window.Favorites && window.Favorites.colorFor(store.id)) || DEFAULT_MARKER_COLOR;
+    }
+
+    /** 단일 가맹점 마커: 핀 + 상호 라벨 */
     function storeMarkerHtml(store, showLabel) {
         return (
             '<div class="store-marker' +
             (showLabel ? ' labeled' : '') +
             '">' +
             '<svg class="store-pin" width="' + PIN_WIDTH + '" height="' + PIN_HEIGHT + '" viewBox="0 0 22 30">' +
-            '<path d="M11 0C4.9 0 0 4.9 0 11c0 8.2 11 19 11 19s11-10.8 11-19C22 4.9 17.1 0 11 0z" fill="#2f6fed"/>' +
+            '<path d="M11 0C4.9 0 0 4.9 0 11c0 8.2 11 19 11 19s11-10.8 11-19C22 4.9 17.1 0 11 0z" fill="' +
+            markerColor(store) + '"/>' +
             '<circle cx="11" cy="11" r="4.5" fill="#fff"/></svg>' +
             '<span class="store-label">' + escapeHtml(store.name) + '</span>' +
             '</div>'
@@ -349,7 +358,17 @@
     function appendStoreListItem(listEl, store, onClick) {
         var item = document.createElement('div');
         item.className = 'store-list-item';
-        item.textContent = store.name + ' (' + (store.roadAddress || store.jibunAddress || '') + ')';
+        var favoriteColor = window.Favorites && window.Favorites.colorFor(store.id);
+        if (favoriteColor) {
+            var dot = document.createElement('span');
+            dot.className = 'fav-dot';
+            dot.style.background = favoriteColor;
+            dot.style.marginRight = '6px';
+            item.appendChild(dot);
+        }
+        item.appendChild(
+            document.createTextNode(store.name + ' (' + (store.roadAddress || store.jibunAddress || '') + ')')
+        );
         item.addEventListener('click', onClick);
         listEl.appendChild(item);
     }
@@ -406,7 +425,6 @@
                 if (query && store.name.toLowerCase().indexOf(query) < 0) return;
                 appendStoreListItem(itemsEl, store, function () {
                     showDetail(store);
-                    openNaverPlacePopup(store);
                 });
             });
         }
@@ -414,7 +432,11 @@
         renderItems();
     }
 
+    var lastStores = [];
+    var wasFavoriteFilterActive = false;
+
     function renderStores(stores) {
+        lastStores = stores;
         clearMarkers();
         currentGroups = groupByLocation(stores);
         var showLabels = map.getZoom() >= LABEL_MIN_ZOOM;
@@ -443,8 +465,8 @@
                     el('storeDetail').classList.add('hidden');
                     renderStoreList();
                 } else {
+                    // 상세 패널만 연다. 네이버 지도 팝업은 "네이버 지도에서 보기"를 눌렀을 때 열린다.
                     showDetail(group.stores[0]);
-                    openNaverPlacePopup(group.stores[0]);
                 }
             });
             markers.push(marker);
@@ -453,10 +475,28 @@
         renderStoreList();
     }
 
+    /** 즐겨찾기 그룹 필터가 켜져 있으면 서버 조회 없이 선택한 그룹의 가맹점 중 화면 안에 있는 것만 그린다. */
+    function renderFavoriteFilter(bounds) {
+        renderStores(
+            window.Favorites.visibleStores().filter(function (store) {
+                return bounds.hasLatLng(new naver.maps.LatLng(store.lat, store.lng));
+            })
+        );
+    }
+
+    function favoriteFilterActive() {
+        return !!window.Favorites && window.Favorites.isFilterActive();
+    }
+
     function fetchStores() {
         var bounds = map.getBounds();
         var sw = bounds.getSW();
         var ne = bounds.getNE();
+
+        if (favoriteFilterActive()) {
+            renderFavoriteFilter(bounds);
+            return;
+        }
 
         var params = new URLSearchParams({
             swLat: sw.lat(),
@@ -521,6 +561,27 @@
         naver.maps.Event.addListener(map, 'idle', fetchStores);
 
         el('searchButton').addEventListener('click', fetchStores);
+
+        // 즐겨찾기 그룹이 바뀌면(색/담김/표시 여부) 마커를 다시 그린다.
+        document.addEventListener('favorites:changed', function () {
+            if (favoriteFilterActive()) {
+                renderFavoriteFilter(map.getBounds());
+            } else if (lastStores.length > 0) {
+                renderStores(lastStores);
+            }
+            // 필터를 막 껐다면 화면 안의 전체 가맹점이 필요하므로 서버에서 다시 받는다.
+            if (!favoriteFilterActive() && wasFavoriteFilterActive) fetchStores();
+            wasFavoriteFilterActive = favoriteFilterActive();
+        });
+        document.addEventListener('favorites:fit', function (event) {
+            var stores = event.detail || [];
+            if (stores.length === 0) return;
+            var bounds = new naver.maps.LatLngBounds();
+            stores.forEach(function (store) {
+                bounds.extend(new naver.maps.LatLng(store.lat, store.lng));
+            });
+            map.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 });
+        });
         el('closeDetailButton').addEventListener('click', function () {
             el('storeDetail').classList.add('hidden');
         });

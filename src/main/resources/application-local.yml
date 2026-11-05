@@ -19,3 +19,8 @@ open-data:
 logging:
   level:
     com.localpaymap: debug
+
+auth:
+  cookie-secure: false # 로컬은 http 이므로 Secure 쿠키 해제
+  jwt:
+    secret: local-dev-only-jwt-secret-change-me-0123456789 # 로컬 전용. 운영은 JWT_SECRET 환경변수 필수

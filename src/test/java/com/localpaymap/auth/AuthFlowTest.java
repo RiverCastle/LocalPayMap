@@ -107,6 +107,17 @@ class AuthFlowTest {
     }
 
     @Test
+    void authenticatedRequestsKeepTheCsrfCookie() throws Exception {
+        TokenPair pair = tokenService.issue(newUser("csrf-keep"));
+        // 로그인 상태의 GET이 XSRF-TOKEN 쿠키를 삭제/교체하면 곧바로 이어지는 첫 쓰기 요청이 403이 된다.
+        mockMvc.perform(get("/api/me")
+                        .cookie(new Cookie(TokenCookies.ACCESS, pair.accessToken()), new Cookie("XSRF-TOKEN", "t")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie()
+                        .doesNotExist("XSRF-TOKEN"));
+    }
+
+    @Test
     void adminAreaStillRequiresAdminLogin() throws Exception {
         mockMvc.perform(get("/admin/stores")).andExpect(status().is3xxRedirection());
     }

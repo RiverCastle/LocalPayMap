@@ -26,6 +26,7 @@
         <input id="keywordInput" type="text" placeholder="가맹점명 검색" />
         <button id="searchButton" type="button">검색</button>
         <button id="locateButton" type="button">내 주변 가맹점</button>
+        <button id="favoritePanelButton" type="button" class="favorite-panel-btn">★ 내 즐겨찾기</button>
     </section>
 
     <section id="categoryChips" class="category-chips" aria-label="업종 필터"></section>
@@ -35,6 +36,20 @@
         <aside id="storeList" aria-label="가맹점 목록"></aside>
     </main>
 
+    <aside id="favoritePanel" class="favorite-panel hidden" aria-label="내 즐겨찾기 그룹">
+        <button id="closeFavoritePanel" type="button" class="close-btn" aria-label="닫기">&times;</button>
+        <h2>내 즐겨찾기</h2>
+        <div id="favoriteFilterStatus" class="fav-filter-status hidden">
+            <span id="favoriteFilterText"></span>
+            <button id="clearFavoriteFilter" type="button" class="fav-link">전체 보기</button>
+        </div>
+        <div id="favoriteGroupList"></div>
+        <div class="fav-new-group">
+            <input id="newGroupName" type="text" maxlength="50" placeholder="새 그룹 이름" />
+            <button id="addGroupButton" type="button">그룹 만들기</button>
+        </div>
+    </aside>
+
     <div id="storeDetail" class="store-detail hidden">
         <button id="closeDetailButton" type="button" class="close-btn">&times;</button>
         <h2 id="detailName"></h2>
@@ -42,11 +57,13 @@
         <p id="detailPhone"></p>
         <p id="detailCategory"></p>
         <p id="detailCurrency"></p>
+        <div id="detailGroups" class="detail-groups"></div>
         <a id="detailNaverLink" href="#" target="_blank" rel="noopener">네이버 지도에서 보기</a>
     </div>
 
     <script th:src="|https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${naverClientId}|"></script>
     <script th:src="@{/js/auth.js}"></script>
+    <script th:src="@{/js/favorites.js}"></script>
     <script th:src="@{/js/map.js}"></script>
 </body>
 </html>

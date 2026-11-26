@@ -45,4 +45,9 @@ public class FavoriteItem {
         this.groupId = groupId;
         this.storeId = storeId;
     }
+
+    /** 중복 가맹점을 정리할 때 남는 가맹점으로 옮긴다. */
+    public void moveTo(Long storeId) {
+        this.storeId = storeId;
+    }
 }

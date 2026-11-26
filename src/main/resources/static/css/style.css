@@ -868,6 +868,110 @@ main {
     cursor: pointer;
 }
 
+/* 가맹점 제보 */
+.detail-reports {
+    margin: 10px 0 6px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.report-status {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 6px;
+}
+
+.report-status.has-reports {
+    color: #c92a2a;
+    font-weight: 600;
+}
+
+.report-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.report-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 10px;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    background: #fff;
+    color: #333;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.report-btn:hover {
+    border-color: #c92a2a;
+}
+
+.report-btn.reported {
+    border-color: #c92a2a;
+    background: #fff0f0;
+    color: #c92a2a;
+    font-weight: 600;
+}
+
+.report-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.report-count {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #f1f3f5;
+    color: #555;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+}
+
+.report-btn.reported .report-count {
+    background: #c92a2a;
+    color: #fff;
+}
+
+.report-hint {
+    margin-top: 5px;
+    font-size: 11px;
+    color: #999;
+}
+
+.report-line {
+    margin-top: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #c92a2a;
+}
+
+.report-badge {
+    position: absolute;
+    top: -7px;
+    left: 13px;
+    min-width: 16px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border: 1px solid #fff;
+    border-radius: 8px;
+    background: #c92a2a;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+}
+
+.store-marker.group-marker .report-badge {
+    left: 20px;
+}
+
 @media (max-width: 768px) and (orientation: portrait) {
     .favorite-panel {
         left: 0;

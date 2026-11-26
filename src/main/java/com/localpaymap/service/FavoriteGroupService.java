@@ -32,13 +32,17 @@ public class FavoriteGroupService {
     private final FavoriteItemRepository itemRepository;
     private final StoreRepository storeRepository;
 
+    private final StoreReportService storeReportService;
+
     public FavoriteGroupService(
             FavoriteGroupRepository groupRepository,
             FavoriteItemRepository itemRepository,
-            StoreRepository storeRepository) {
+            StoreRepository storeRepository,
+            StoreReportService storeReportService) {
         this.groupRepository = groupRepository;
         this.itemRepository = itemRepository;
         this.storeRepository = storeRepository;
+        this.storeReportService = storeReportService;
     }
 
     public List<FavoriteGroupResponse> list(Long userId) {
@@ -59,9 +63,9 @@ public class FavoriteGroupService {
 
     public List<StoreResponse> listStores(Long userId, Long groupId) {
         FavoriteGroup group = ownedGroup(userId, groupId);
-        return itemRepository.findStoresByGroupId(group.getId()).stream()
+        return storeReportService.attachReports(itemRepository.findStoresByGroupId(group.getId()).stream()
                 .map(StoreResponse::from)
-                .toList();
+                .toList());
     }
 
     @Transactional

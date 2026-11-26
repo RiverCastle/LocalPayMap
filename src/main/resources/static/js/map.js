@@ -239,6 +239,7 @@
         el('detailPhone').textContent = store.phone ? '전화: ' + store.phone : '';
         el('detailCategory').textContent = store.category ? '업종: ' + store.category : '';
         el('detailCurrency').textContent = store.currencyName ? '지역화폐: ' + store.currencyName : '';
+        if (window.Reports) window.Reports.renderDetail(store);
         if (window.Favorites) window.Favorites.renderDetail(store);
         el('storeDetail').classList.remove('hidden');
     }
@@ -292,6 +293,8 @@
 
     function renderClusters(clusters) {
         clearMarkers();
+        // 묶음 표시 중에 즐겨찾기/제보가 바뀌어도 이전의 개별 마커를 다시 그리지 않도록 비운다.
+        lastStores = [];
         var total = clusters.reduce(function (sum, c) { return sum + c.count; }, 0);
         setSheetSummary('가맹점 ' + total.toLocaleString() + '곳 (확대하면 개별 표시)');
         var listEl = el('storeList');
@@ -346,6 +349,18 @@
         return (window.Favorites && window.Favorites.colorFor(store.id)) || DEFAULT_MARKER_COLOR;
     }
 
+    function reportCount(store) {
+        return window.Reports ? window.Reports.totalFor(store) : 0;
+    }
+
+    /** 제보가 있는 가맹점 마커에 붙는 빨간 숫자 배지 */
+    function reportBadgeHtml(store) {
+        var count = reportCount(store);
+        if (count === 0) return '';
+        return '<span class="report-badge" title="' + escapeHtml(window.Reports.shortText(store)) + '">' +
+            (count > 99 ? '99+' : count) + '</span>';
+    }
+
     /** 단일 가맹점 마커: 핀 + 상호 라벨 */
     function storeMarkerHtml(store, showLabel) {
         return (
@@ -357,6 +372,7 @@
             markerColor(store) + '"/>' +
             '<circle cx="11" cy="11" r="4.5" fill="#fff"/></svg>' +
             '<span class="store-label">' + escapeHtml(store.name) + '</span>' +
+            reportBadgeHtml(store) +
             '</div>'
         );
     }
@@ -373,6 +389,10 @@
             '<text x="15" y="19" text-anchor="middle" font-size="' + (group.stores.length >= 100 ? 10 : 12) +
             '" font-weight="700" fill="#e8590c">' + group.stores.length + '</text></svg>' +
             '<span class="store-label">' + group.stores.length + '곳</span>' +
+            // 건물 마커의 숫자는 점포 수이므로, 제보는 합산하지 않고 있다는 표시만 한다.
+            (group.stores.some(function (s) { return reportCount(s) > 0; })
+                ? '<span class="report-badge" title="제보가 있는 가맹점 포함">!</span>'
+                : '') +
             '</div>'
         );
     }
@@ -411,6 +431,12 @@
         item.appendChild(
             document.createTextNode(store.name + ' (' + (store.roadAddress || store.jibunAddress || '') + ')')
         );
+        if (reportCount(store) > 0) {
+            var warning = document.createElement('div');
+            warning.className = 'report-line';
+            warning.textContent = '⚠ ' + window.Reports.shortText(store);
+            item.appendChild(warning);
+        }
         item.addEventListener('click', onClick);
         listEl.appendChild(item);
     }
@@ -569,6 +595,7 @@
                 if (result.clustered) {
                     renderClusters(result.clusters);
                 } else {
+                    if (window.Reports) window.Reports.absorb(result.stores);
                     renderStores(result.stores);
                 }
             })
@@ -632,6 +659,9 @@
             // 필터를 막 껐다면 화면 안의 전체 가맹점이 필요하므로 서버에서 다시 받는다.
             if (!favoriteFilterActive() && wasFavoriteFilterActive) fetchStores();
             wasFavoriteFilterActive = favoriteFilterActive();
+        });
+        document.addEventListener('reports:changed', function () {
+            if (lastStores.length > 0) renderStores(lastStores);
         });
         document.addEventListener('favorites:fit', function (event) {
             var stores = event.detail || [];

@@ -41,16 +41,19 @@ public class StagingStoreImportService {
     private final StoreRepository storeRepository;
     private final CurrencyTypeResolver currencyTypeResolver;
     private final SyncLogRepository syncLogRepository;
+    private final StoreReferenceCleaner storeReferenceCleaner;
 
     public StagingStoreImportService(
             JdbcTemplate jdbcTemplate,
             StoreRepository storeRepository,
             CurrencyTypeResolver currencyTypeResolver,
-            SyncLogRepository syncLogRepository) {
+            SyncLogRepository syncLogRepository,
+            StoreReferenceCleaner storeReferenceCleaner) {
         this.jdbcTemplate = jdbcTemplate;
         this.storeRepository = storeRepository;
         this.currencyTypeResolver = currencyTypeResolver;
         this.syncLogRepository = syncLogRepository;
+        this.storeReferenceCleaner = storeReferenceCleaner;
     }
 
     @Transactional
@@ -121,6 +124,7 @@ public class StagingStoreImportService {
             }
 
             storeRepository.saveAll(toInsert);
+            storeReferenceCleaner.release(toDelete.stream().map(Store::getId).toList());
             storeRepository.deleteAll(toDelete);
 
             return syncLogRepository.save(new SyncLog(

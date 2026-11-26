@@ -28,16 +28,22 @@ public class StoreService {
     private final CurrencyTypeRepository currencyTypeRepository;
     private final NaverGeocodingClient naverGeocodingClient;
     private final CategoryService categoryService;
+    private final StoreReferenceCleaner storeReferenceCleaner;
+    private final StoreReportService storeReportService;
 
     public StoreService(
             StoreRepository storeRepository,
             CurrencyTypeRepository currencyTypeRepository,
             NaverGeocodingClient naverGeocodingClient,
-            CategoryService categoryService) {
+            CategoryService categoryService,
+            StoreReferenceCleaner storeReferenceCleaner,
+            StoreReportService storeReportService) {
         this.storeRepository = storeRepository;
         this.currencyTypeRepository = currencyTypeRepository;
         this.naverGeocodingClient = naverGeocodingClient;
         this.categoryService = categoryService;
+        this.storeReferenceCleaner = storeReferenceCleaner;
+        this.storeReportService = storeReportService;
     }
 
     public StoreSearchResponse searchInBounds(
@@ -74,7 +80,7 @@ public class StoreService {
                 .stream()
                 .map(StoreResponse::from)
                 .toList();
-        return StoreSearchResponse.individual(stores);
+        return StoreSearchResponse.individual(storeReportService.attachReports(stores));
     }
 
     /** 격자 한 칸이 화면에서 대략 이 픽셀 크기가 되도록 한다. */
@@ -92,10 +98,11 @@ public class StoreService {
     }
 
     public StoreResponse getById(Long id) {
-        return storeRepository
+        StoreResponse store = storeRepository
                 .findById(id)
                 .map(StoreResponse::from)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가맹점입니다: " + id));
+        return storeReportService.attachReports(List.of(store)).get(0);
     }
 
     @Transactional
@@ -144,6 +151,7 @@ public class StoreService {
 
     @Transactional
     public void delete(Long id) {
+        storeReferenceCleaner.release(List.of(id));
         storeRepository.deleteById(id);
     }
 
@@ -185,6 +193,7 @@ public class StoreService {
             throw new IllegalArgumentException("확인 이후 데이터가 변경되었습니다 (확인 " + expectedDeleteCount + "건 / 현재 "
                     + ids.size() + "건). 다시 확인해 주세요.");
         }
+        storeReferenceCleaner.release(ids);
         for (int from = 0; from < ids.size(); from += 1000) {
             storeRepository.deleteAllByIdInBatch(ids.subList(from, Math.min(from + 1000, ids.size())));
         }
@@ -194,6 +203,7 @@ public class StoreService {
     @Transactional
     public int deleteAll(List<Long> ids) {
         List<Store> stores = storeRepository.findAllById(ids);
+        storeReferenceCleaner.release(stores.stream().map(Store::getId).toList());
         storeRepository.deleteAll(stores);
         return stores.size();
     }
